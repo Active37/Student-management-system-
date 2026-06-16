@@ -1,0 +1,109 @@
+{
+  "entities": {
+    "User": {
+      "title": "User",
+      "description": "Represents a university user (student or instructor)",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string", "description": "The Firebase Authentication UID" },
+        "name": { "type": "string", "description": "Full name of the user" },
+        "email": { "type": "string", "description": "University email address" },
+        "role": { "type": "string", "enum": ["student", "instructor", "admin"], "description": "User role in the system" },
+        "studentId": { "type": "string", "description": "Unique matriculation/employee number" },
+        "department": { "type": "string", "description": "Academic department" },
+        "phone": { "type": "string", "description": "Contact phone number" },
+        "level": { "type": "string", "description": "Academic level, e.g. 100L, 200L, 400L, for students" }
+      },
+      "required": ["uid", "name", "email", "role"]
+    },
+    "Course": {
+      "title": "Course",
+      "description": "Represents a university class/course",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "Course code, e.g. COS301" },
+        "title": { "type": "string", "description": "Course title, e.g. Software Engineering" },
+        "units": { "type": "number", "description": "Credit units, typically 1-6" },
+        "description": { "type": "string", "description": "Course description" },
+        "instructorId": { "type": "string", "description": "The user ID of the instructor teaching this course" },
+        "instructorName": { "type": "string", "description": "Name of the instructor" },
+        "department": { "type": "string", "description": "Department offering the course" },
+        "scheduleDay": { "type": "string", "enum": ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"], "description": "Day of the week of class" },
+        "scheduleTime": { "type": "string", "description": "Time range, e.g. 10:00 - 12:00" },
+        "room": { "type": "string", "description": "Classroom code/room" }
+      },
+      "required": ["id", "title", "units", "instructorId", "scheduleDay", "scheduleTime"]
+    },
+    "Enrollment": {
+      "title": "Enrollment",
+      "description": "Represents a student's enrollment in a course and their grade",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "Combination of studentId_courseId" },
+        "studentId": { "type": "string", "description": "The UID of the student" },
+        "studentName": { "type": "string", "description": "The name of the student" },
+        "courseId": { "type": "string", "description": "The ID of the course" },
+        "courseTitle": { "type": "string", "description": "Selected course title cached" },
+        "courseUnits": { "type": "number", "description": "Selected course credit units cached" },
+        "semester": { "type": "string", "description": "Semester of enrollment, e.g. 2026 Fall, 2026 Spring" },
+        "score": { "type": "number", "description": "Numerical score from 0-100" },
+        "grade": { "type": "string", "enum": ["A", "B", "C", "D", "F", "Pending"], "description": "Letter grade based on score" },
+        "status": { "type": "string", "enum": ["active", "completed", "dropped"], "description": "Status of course registration" }
+      },
+      "required": ["studentId", "courseId", "courseTitle", "courseUnits", "semester", "status"]
+    },
+    "AttendanceSession": {
+      "title": "AttendanceSession",
+      "description": "Represents a class session created by an instructor to track attendance",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "Unique session ID" },
+        "courseId": { "type": "string", "description": "The ID of the course" },
+        "date": { "type": "string", "description": "Date of the class session (YYYY-MM-DD)" },
+        "otp": { "type": "string", "description": "4-digit PIN code required for students to mark attendance" },
+        "active": { "type": "boolean", "description": "Are check-ins currently allowed" },
+        "createdAt": { "type": "string", "description": "Timestamp when session was created" },
+        "instructorId": { "type": "string", "description": "The instructor who created the session" }
+      },
+      "required": ["courseId", "date", "otp", "active", "createdAt", "instructorId"]
+    },
+    "AttendanceRecord": {
+      "title": "AttendanceRecord",
+      "description": "Represents a single student's attendance check-in for a session",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "Combination of studentId_sessionId" },
+        "studentId": { "type": "string", "description": "The UID of the student checking in" },
+        "studentName": { "type": "string", "description": "Student's name cached" },
+        "studentMatric": { "type": "string", "description": "Student's matric number cached" },
+        "sessionId": { "type": "string", "description": "The ID of the attendance session" },
+        "courseId": { "type": "string", "description": "The ID of the course" },
+        "timestamp": { "type": "string", "description": "Time the check-in occurred" },
+        "status": { "type": "string", "enum": ["present", "late"], "description": "Attendance status" }
+      },
+      "required": ["studentId", "studentName", "sessionId", "courseId", "timestamp", "status"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": "User",
+      "description": "University user profiles mapped by Auth UID"
+    },
+    "/courses/{courseId}": {
+      "schema": "Course",
+      "description": "University course catalog"
+    },
+    "/enrollments/{enrollmentId}": {
+      "schema": "Enrollment",
+      "description": "Student course enrollment and academic results"
+    },
+    "/attendance_sessions/{sessionId}": {
+      "schema": "AttendanceSession",
+      "description": "Class session objects created by instructors"
+    },
+    "/attendance_records/{recordId}": {
+      "schema": "AttendanceRecord",
+      "description": "Check-in events of present students"
+    }
+  }
+}

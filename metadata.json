@@ -1,0 +1,6 @@
+{
+  "name": "Babcock UMIS Portal",
+  "description": "Student result and registration portal with grade simulation and biometric compliance tracking",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

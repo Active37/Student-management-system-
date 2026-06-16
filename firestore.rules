@@ -1,0 +1,81 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // Helper to get user profile
+    function getUser(userId) {
+      return get(/databases/$(database)/documents/users/$(userId)).data;
+    }
+    
+    // Checks if request is authenticated
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+    
+    // Checks if user has student or instructor role
+    function hasRole(userId, role) {
+      return getUser(userId).role == role;
+    }
+
+    // Users collection
+    match /users/{userId} {
+      allow read: if isAuthenticated();
+      allow create, update: if isAuthenticated() && request.auth.uid == userId;
+      allow delete: if isAuthenticated() && getUser(request.auth.uid).role == "admin";
+    }
+
+    // Courses collection
+    match /courses/{courseId} {
+      allow read: if isAuthenticated();
+      allow write: if isAuthenticated() && (getUser(request.auth.uid).role == "instructor" || getUser(request.auth.uid).role == "admin");
+    }
+
+    // Enrollments collection
+    match /enrollments/{enrollmentId} {
+      allow read: if isAuthenticated();
+      
+      // Creating enrollment: Students can register for a course. They MUST set grade to Pending.
+      allow create: if isAuthenticated() && (
+        getUser(request.auth.uid).role == "instructor" || 
+        getUser(request.auth.uid).role == "admin" ||
+        (getUser(request.auth.uid).role == "student" && request.resource.data.studentId == request.auth.uid && request.resource.data.grade == "Pending")
+      );
+      
+      // Updating enrollment: Students can drop (status changed to dropped) but CANNOT change performance metrics (grade, score).
+      // Instructors and admins can change anything.
+      allow update: if isAuthenticated() && (
+        getUser(request.auth.uid).role == "instructor" || 
+        getUser(request.auth.uid).role == "admin" ||
+        (
+          getUser(request.auth.uid).role == "student" && 
+          request.resource.data.studentId == request.auth.uid &&
+          request.resource.data.grade == resource.data.grade &&
+          request.resource.data.score == resource.data.score
+        )
+      );
+      
+      allow delete: if isAuthenticated() && (
+        getUser(request.auth.uid).role == "instructor" || 
+        getUser(request.auth.uid).role == "admin" ||
+        (getUser(request.auth.uid).role == "student" && resource.data.studentId == request.auth.uid)
+      );
+    }
+
+    // Attendance sessions
+    match /attendance_sessions/{sessionId} {
+      allow read: if isAuthenticated();
+      allow write: if isAuthenticated() && (getUser(request.auth.uid).role == "instructor" || getUser(request.auth.uid).role == "admin");
+    }
+
+    // Attendance records
+    match /attendance_records/{recordId} {
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated() && (
+        getUser(request.auth.uid).role == "instructor" ||
+        getUser(request.auth.uid).role == "admin" ||
+        (getUser(request.auth.uid).role == "student" && request.resource.data.studentId == request.auth.uid)
+      );
+      allow update, delete: if isAuthenticated() && (getUser(request.auth.uid).role == "instructor" || getUser(request.auth.uid).role == "admin");
+    }
+  }
+}
